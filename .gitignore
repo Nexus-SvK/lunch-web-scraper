@@ -1,4 +1,5 @@
 /node_modules
 /dist
 package-lock.json
-chrome-lunch-extension-6c9cb40592f6.json
+serviceAccountKey.json
+.env
