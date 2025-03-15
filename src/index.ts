@@ -1,5 +1,6 @@
+import "dotenv/config";
 import { giorno, xxxLutz } from "./documentAi";
-import { mediCullina, vert } from "./scrape";
+import { mediCullina, takeoff, vert } from "./scrape";
 import { Firestore } from "@google-cloud/firestore";
 
 interface Data {
@@ -18,6 +19,7 @@ const getMenus= async () => {
 		vert: null,
 		giorno: null,
 		xxxLutz: null,
+		takeoff: null
 	};
 
 	try {
@@ -46,6 +48,13 @@ const getMenus= async () => {
 		console.log("[XXXLUTZ] DONE");
 	} catch (e) {
 		console.log("[XXXLUTZ] ERROR: " + e);
+	}
+
+	try {
+		data.takeoff = await takeoff();
+		console.log("[TAKEOFF] DONE");
+	} catch (e) {
+		console.log("[TAKEOFF] ERROR: " + e);
 	}
 
 	console.log(data);
