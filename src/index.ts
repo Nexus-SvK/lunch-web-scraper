@@ -3,8 +3,48 @@ import { giorno, xxxLutz } from "./documentAi";
 import { mediCullina, takeoff, vert } from "./scrape";
 import { Firestore } from "@google-cloud/firestore";
 
+export const puppeteerConfig = {
+	 headless: true,
+	 args: ["--no-sandbox", "--disable-setuid-sandbox"],
+	...(process.env.SHELL == '/bin/bash' && {executablePath: '/usr/bin/chromium'})
+}
+
+export interface MenuItem {
+	type: string;
+	name: string;
+	quantity: string;
+	price?: string;
+}
+
+export interface SingleMenu {
+	mainMeal:string;
+	soup: string,
+	price:string,
+}
+
 interface Data {
-	[key:string]:{[key:string]:string[]} | null;
+	[key:string]:{[key:string]:MenuItem[] | SingleMenu} | null;
+}
+
+const converter = (day: string) => {
+	if (day?.includes("pondelok")) return "monday";
+	if (day?.includes("utorok")) return "tuesday";
+	if (day?.includes("streda")) return "wednesday";
+	if (day?.includes("tvrtok")) return "thursday";
+	if (day?.includes("piatok")) return "friday";
+	return day;
+};
+
+export const intoMap = (array:string[][],callback:(item:string)=>MenuItem|null) =>{
+	const obj:{[key: string]: MenuItem[]} = {};
+	for (const item of array) {
+		const rawDay = item.shift()?.toLowerCase();
+		const day = converter(rawDay ?? "other");
+		if(callback){
+			obj[day]= item.map(callback).filter((x) => x !== null);
+		}
+	}
+	return obj
 }
 
 const getMenus= async () => {

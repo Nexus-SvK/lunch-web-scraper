@@ -1,6 +1,7 @@
 import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { MenuItem, puppeteerConfig, SingleMenu } from ".";
 
 puppeteer.use(StealthPlugin());
 
@@ -69,21 +70,32 @@ const giorno = async () => {
 	const { document } = result;
 
 	const finalResult =
-		document?.entities?.reduce((res: { [key: string]: string[] }, data) => {
+		document?.entities?.reduce((res: { [key: string]: MenuItem[] } | null, data) => {
 			const strings = data?.type?.split("_");
 			if (!strings || strings.length === 0) {
 				throw new Error("No data type found");
 			}
 
-			if (!res[strings[0]]) { // Fix: Check if it exists before assigning an array
+			if (res && (!res[strings[0]])) { // Fix: Check if it exists before assigning an array
 				res[strings[0]] = [];
 			}
 
 			// console.log(strings[0]);
-			const text = data?.mentionText ?? "";
+			let text = data?.mentionText ?? "";
+			text = text.replace("0,331", "0,33l").replaceAll("\n", " ")
+			
+			const match = text.match(/^([0-9,]+([lg]))\s+(.*?)(?:\s*\/\d+,\d+\/\s*)?(\d+,\d+€)?$/)
 
-			res[strings[0]].push(
-				text.replace("0,331", "0,33l").replaceAll("\n", " "),
+			if (!match) return null;
+    
+
+			res && res[strings[0]].push(
+				{
+					type: match[2] == 'g' ? 'menu' : 'soup', // 'l' or 'g' from the quantity unit
+					name: match[3].trim(), // name part, trimmed to remove any extra spaces
+					quantity: match[1], // full quantity including unit
+					price: match[4] || undefined // price if present, otherwise undefined
+				}
 			);
 
 			return res;
@@ -94,7 +106,7 @@ const giorno = async () => {
 
 const xxxLutz = async () => {
 	const url = "https://www.xxxlutz.sk/c/xxxl-restauracia";
-	const browser = await puppeteer.launch({ headless: true });
+	const browser = await puppeteer.launch(puppeteerConfig);
 	const page = await browser.newPage();
 
 	await page.goto(url, { waitUntil: "networkidle2" });
@@ -129,22 +141,31 @@ const xxxLutz = async () => {
 	const { document } = result;
 
 	const finalResult =
-		document?.entities?.reduce((res: { [key: string]: string[] }, data) => {
+		document?.entities?.reduce((res: { [key: string]: SingleMenu }|null, data) => {
 			const strings = data?.type?.split("_");
 			if (!strings || strings.length === 0) {
 				throw new Error("No data type found");
 			}
 
-			if (!res[strings[0]]) { // Fix: Check if it exists before assigning an array
-				res[strings[0]] = [];
+			if (res && (!res[strings[0]])) { // Fix: Check if it exists before assigning an array
+				res[strings[0]] = {mainMeal: "", soup: "", price: ""};
 			}
 
 			// console.log(strings[0]);
-			const text = data?.mentionText ?? "";
+			let text = data?.mentionText ?? "";
+			text = text.replace("0,21", "0,2l").replaceAll("\n", " ")
 
-			res[strings[0]].push(
-				text.replace("0,21", "0,2l").replaceAll("\n", " "),
-			);
+			if (res && /\d+[,.]?\d*\s*g/.test(text)) {
+				res[strings[0]].mainMeal = text;
+			  }
+			  // Check for soup (contains "l" in quantity)
+			  else if (res && /\d+[,.]?\d*\s*l/.test(text)) {
+				res[strings[0]].soup =text;
+			  }
+			  // Check for price (only numbers, optional comma, and optional "€")
+			  else if (res && /^\d+,\d+\s*€?$/.test(text)) {
+				res[strings[0]].price=text.replace(/\s*€/, '') + " €"; // Remove "€" if present
+			  }
 
 			return res;
 		}, {}) || {};
