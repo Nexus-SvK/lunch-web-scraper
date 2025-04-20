@@ -46,7 +46,7 @@ const vertMenuItem = (input: string): MenuItem | null => {
 	  return {
 		type: "menu",
 		// index: parseInt(groups.index, 10),
-		name: groups.name.trim(),
+		name: groups.name.trim().split(" - obsahuje")[0].trim(),
 		quantity: groups.quantity,
 		price: groups.price
 	  };
@@ -55,7 +55,7 @@ const vertMenuItem = (input: string): MenuItem | null => {
 	if (groups.soupQuantity) {
 	  return {
 		type: "soup",
-		name: groups.soupName.trim(),
+		name: groups.soupName.trim().split(" - obsahuje")[0].trim(),
 		quantity: groups.soupQuantity.replace(/\s+/g, ''),
 		price: groups.soupPrice
 	  };

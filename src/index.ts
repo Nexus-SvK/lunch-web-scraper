@@ -52,6 +52,7 @@ const getMenus= async () => {
 		databaseId:process.env.GOOGLE_DATABASE_ID!,
 		projectId: process.env.GOOGLE_PROJECT_ID!,
 		keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS!,
+		ignoreUndefinedProperties:true
 	});
 
 	const data:Data = {
@@ -97,7 +98,7 @@ const getMenus= async () => {
 		console.log("[TAKEOFF] ERROR: " + e);
 	}
 
-	console.log(data);
+	console.log(JSON.stringify(data));
 
 	try {
 		if(Object.entries(data).every((x)=>x === null)) throw new Error("No Data to send into Database");
